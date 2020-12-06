@@ -3,10 +3,18 @@ import ctypes
 import requests
 import time
 import os
+import sys
 
-BASE_PATH = 'D:\\Projects\\Python'
+if not os.getenv('WBC_IMAGES_DIR'):
+    sys.exit('Environment variable WBC_IMAGES_DIR is not set')
+
+if not os.getenv('WBC_UNSPLASH_CID'):
+    sys.exit("Environment variable 'WBC_UNSPLASH_CID' is not set")
+
+IMAGES_DIR = os.environ["WBC_IMAGES_DIR"]
+
 PARAMS = {
-    'client_id': os.getenv('UNSPLASH_WALLPAPER_CHANGER_CID'),
+    'client_id': os.environ['WBC_UNSPLASH_CID'],
     'orientation': "landscape",
     'query': "nature"
 }
@@ -34,26 +42,23 @@ def change_background(path):
 
 def download_image(callback):
     """downloads and saves a random image, and then invokes the callback"""
+    response = requests.get(
+        'https://api.unsplash.com/photos/random', params=PARAMS).json()
 
-    if PARAMS['client_id']:
-        response = requests.get(
-            'https://api.unsplash.com/photos/random', params=PARAMS).json()
+    image_save_path = os.path.join(IMAGES_DIR, f'img-{round(time.time())}.jpg')
 
-        image_save_path = f'{BASE_PATH}\\img-{round(time.time())}.jpg'
+    with open(image_save_path, 'wb') as f:
+        raw_image_url = response["urls"]["raw"]
+        print("Starting to download the image from url: "+raw_image_url)
 
-        with open(image_save_path, 'wb') as f:
-            raw_image_url = response["urls"]["raw"]
-            print("Starting to download the image from url: "+raw_image_url)
-            
-            f.write(requests.get(raw_image_url).content)
-            
-            print("Downloaded the image and saved to: "+image_save_path)
-        callback(image_save_path)
-    else:
-        print("Environment variable 'UNSPLASH_WALLPAPER_CHANGER_CID' is not set")
+        f.write(requests.get(raw_image_url).content)
+
+        print("Downloaded the image and saved to: "+image_save_path)
+    callback(image_save_path)
 
 
 def change_windows_background():
     download_image(change_background)
+
 
 change_windows_background()
