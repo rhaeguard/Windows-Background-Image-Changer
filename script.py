@@ -39,26 +39,30 @@ def change_background(path):
             SPI_SETDESKWALLPAPER, 0, path, 3)
     print("Background picture changed")
 
+def get_image_url():
+    """downloads and saves a random image, and then invokes the callback"""
+    try:
+        response = requests.get('https://api.unsplash.com/photos/random', params=PARAMS).json()
+        return response["urls"]["raw"]
+    except requests.exceptions.ConnectionError as _:
+        sys.exit("Could not establish a connection to get an image URL")
 
 def download_image(callback):
-    """downloads and saves a random image, and then invokes the callback"""
-    response = requests.get(
-        'https://api.unsplash.com/photos/random', params=PARAMS).json()
-
     image_save_path = os.path.join(IMAGES_DIR, f'img-{round(time.time())}.jpg')
 
     with open(image_save_path, 'wb') as f:
-        raw_image_url = response["urls"]["raw"]
-        print("Starting to download the image from url: "+raw_image_url)
+        raw_image_url = get_image_url()
+        print(f'Starting to download the image from url: {raw_image_url}')
 
-        f.write(requests.get(raw_image_url).content)
-
-        print("Downloaded the image and saved to: "+image_save_path)
+        try:
+            f.write(requests.get(raw_image_url).content)
+            print(f'Downloaded the image and saved to: {image_save_path}')
+        except requests.exceptions.ConnectionError as _:
+            sys.exit("Could not establish a connection to download the image")
+    
     callback(image_save_path)
-
 
 def change_windows_background():
     download_image(change_background)
-
 
 change_windows_background()
